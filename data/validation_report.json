@@ -1,0 +1,84 @@
+{
+  "toc_entries": 329,
+  "articles_parsed": 329,
+  "in_toc_not_parsed": [
+    "270C"
+  ],
+  "parsed_not_in_toc": [],
+  "order_mismatches": [],
+  "title_mismatches_vs_toc": [
+    {
+      "article": "97",
+      "toc": "Extent of executive authority of Federation.",
+      "parsed": "Extent of executive authority of",
+      "similarity": 0.85
+    },
+    {
+      "article": "128",
+      "toc": "Power of Governor to promulgate Ordinances.",
+      "parsed": "Power of Governor to promulgate",
+      "similarity": 0.84
+    },
+    {
+      "article": "280",
+      "toc": "Continuance of Proclamation of Emergency.",
+      "parsed": "Continuance of Proclamation",
+      "similarity": 0.82
+    }
+  ],
+  "missing_numbers_1_to_280": [],
+  "empty_titles": [],
+  "empty_text": [],
+  "stub_articles_from_contents_only": [
+    "270C"
+  ],
+  "omitted_articles": [
+    "71",
+    "96",
+    "134",
+    "135",
+    "152A",
+    "184",
+    "186",
+    "186A",
+    "191A",
+    "203CC",
+    "203I",
+    "212A",
+    "247",
+    "270AAA",
+    "270C"
+  ],
+  "very_long_check_manually": [],
+  "replacement_chars": 0,
+  "notes_attached": 595,
+  "articles_without_notes_but_with_marker_digits": null,
+  "known_string_failures": [],
+  "spot_check_pages": [
+    36,
+    39,
+    41,
+    42,
+    44,
+    45,
+    49,
+    50,
+    51,
+    58,
+    65,
+    81,
+    88,
+    109,
+    120,
+    128,
+    134,
+    135,
+    138,
+    156,
+    164,
+    168,
+    171,
+    176,
+    193
+  ]
+}

@@ -1,0 +1,270 @@
+[
+ {
+  "type": "part",
+  "part": "I",
+  "part_title": "Introductory",
+  "pdf_page": 27
+ },
+ {
+  "type": "part",
+  "part": "II",
+  "part_title": "Fundamental Rights and Principles of Policy",
+  "pdf_page": 29
+ },
+ {
+  "type": "chapter",
+  "chapter": "1",
+  "chapter_title": "FUNDAMENTAL RIGHTS",
+  "part": "II",
+  "pdf_page": 29
+ },
+ {
+  "type": "chapter",
+  "chapter": "2",
+  "chapter_title": "PRINCIPLES OF POLICY",
+  "part": "II",
+  "pdf_page": 39
+ },
+ {
+  "type": "part",
+  "part": "III",
+  "part_title": "The Federation of Pakistan",
+  "pdf_page": 43
+ },
+ {
+  "type": "chapter",
+  "chapter": "1",
+  "chapter_title": "THE PRESIDENT",
+  "part": "III",
+  "pdf_page": 43
+ },
+ {
+  "type": "chapter",
+  "chapter": "2",
+  "chapter_title": "THE [MAJLIS-E-SHOORA (PARLIAMENT)",
+  "part": "III",
+  "pdf_page": 47
+ },
+ {
+  "type": "chapter",
+  "chapter": "3",
+  "chapter_title": "THE FEDERAL GOVERNMENT",
+  "part": "III",
+  "pdf_page": 74
+ },
+ {
+  "type": "part",
+  "part": "IV",
+  "part_title": "Provinces",
+  "pdf_page": 79
+ },
+ {
+  "type": "chapter",
+  "chapter": "1",
+  "chapter_title": "THE GOVERNORS",
+  "part": "IV",
+  "pdf_page": 79
+ },
+ {
+  "type": "chapter",
+  "chapter": "2",
+  "chapter_title": "PROVINCIAL ASSEMBLIES",
+  "part": "IV",
+  "pdf_page": 81
+ },
+ {
+  "type": "chapter",
+  "chapter": "3",
+  "chapter_title": "THE PROVINCIAL GOVERNMENTS",
+  "part": "IV",
+  "pdf_page": 90
+ },
+ {
+  "type": "part",
+  "part": "V",
+  "part_title": "Relations Between Federation and Provinces",
+  "pdf_page": 95
+ },
+ {
+  "type": "chapter",
+  "chapter": "1",
+  "chapter_title": "DISTRIBUTION OF LEGISLATIVE POWERS.",
+  "part": "V",
+  "pdf_page": 95
+ },
+ {
+  "type": "chapter",
+  "chapter": "2",
+  "chapter_title": "ADMINISTRATIVE RELATIONS BETWEEN",
+  "part": "V",
+  "pdf_page": 96
+ },
+ {
+  "type": "chapter",
+  "chapter": "3",
+  "chapter_title": "SPECIAL PROVISIONS",
+  "part": "V",
+  "pdf_page": 99
+ },
+ {
+  "type": "part",
+  "part": "VI",
+  "part_title": "Finance, Property, Contracts and Suits",
+  "pdf_page": 105
+ },
+ {
+  "type": "chapter",
+  "chapter": "1",
+  "chapter_title": "FINANCE",
+  "part": "VI",
+  "pdf_page": 105
+ },
+ {
+  "type": "chapter",
+  "chapter": "2",
+  "chapter_title": "BORROWING AND AUDIT",
+  "part": "VI",
+  "pdf_page": 109
+ },
+ {
+  "type": "chapter",
+  "chapter": "3",
+  "chapter_title": "PROPERTY, CONTRACTS, LIABILITIES",
+  "part": "VI",
+  "pdf_page": 111
+ },
+ {
+  "type": "part",
+  "part": "VII",
+  "part_title": "The Judicature",
+  "pdf_page": 113
+ },
+ {
+  "type": "chapter",
+  "chapter": "1",
+  "chapter_title": "THE COURTS",
+  "part": "VII",
+  "pdf_page": 113
+ },
+ {
+  "type": "chapter",
+  "chapter": "2",
+  "chapter_title": "THE SUPREME COURT OF PAKISTAN",
+  "part": "VII",
+  "pdf_page": 123
+ },
+ {
+  "type": "chapter",
+  "chapter": "3",
+  "chapter_title": "THE HIGH COURTS",
+  "part": "VII",
+  "pdf_page": 128
+ },
+ {
+  "type": "chapter",
+  "chapter": "3A",
+  "chapter_title": "FEDERAL SHARIAT COURT",
+  "part": "VII",
+  "pdf_page": 137
+ },
+ {
+  "type": "chapter",
+  "chapter": "4",
+  "chapter_title": "GENERAL PROVISIONS RELATING TO THE JUDICATURE.",
+  "part": "VII",
+  "pdf_page": 146
+ },
+ {
+  "type": "part",
+  "part": "VIII",
+  "part_title": "Elections",
+  "pdf_page": 153
+ },
+ {
+  "type": "chapter",
+  "chapter": "1",
+  "chapter_title": "CHIEF ELECTION COMMISSIONER",
+  "part": "VIII",
+  "pdf_page": 153
+ },
+ {
+  "type": "chapter",
+  "chapter": "2",
+  "chapter_title": "ELECTORAL LAWS AND CONDUCT OF ELECTIONS",
+  "part": "VIII",
+  "pdf_page": 156
+ },
+ {
+  "type": "part",
+  "part": "IX",
+  "part_title": "Islamic Provisions",
+  "pdf_page": 161
+ },
+ {
+  "type": "part",
+  "part": "X",
+  "part_title": "Emergency Provisions",
+  "pdf_page": 165
+ },
+ {
+  "type": "part",
+  "part": "XI",
+  "part_title": "Amendment of Constitution",
+  "pdf_page": 173
+ },
+ {
+  "type": "part",
+  "part": "XII",
+  "part_title": "Miscellaneous",
+  "pdf_page": 175
+ },
+ {
+  "type": "chapter",
+  "chapter": "1",
+  "chapter_title": "SERVICES",
+  "part": "XII",
+  "pdf_page": 175
+ },
+ {
+  "type": "chapter",
+  "chapter": "2",
+  "chapter_title": "ARMED FORCES",
+  "part": "XII",
+  "pdf_page": 176
+ },
+ {
+  "type": "chapter",
+  "chapter": "3",
+  "chapter_title": "TRIBAL AREAS",
+  "part": "XII",
+  "pdf_page": 178
+ },
+ {
+  "type": "chapter",
+  "chapter": "4",
+  "chapter_title": "GENERAL",
+  "part": "XII",
+  "pdf_page": 180
+ },
+ {
+  "type": "chapter",
+  "chapter": "5",
+  "chapter_title": "INTERPRETATION",
+  "part": "XII",
+  "pdf_page": 184
+ },
+ {
+  "type": "chapter",
+  "chapter": "6",
+  "chapter_title": "TITLE, COMMENCEMENT AND REPEAL",
+  "part": "XII",
+  "pdf_page": 190
+ },
+ {
+  "type": "chapter",
+  "chapter": "7",
+  "chapter_title": "TRANSITIONAL",
+  "part": "XII",
+  "pdf_page": 191
+ }
+]
