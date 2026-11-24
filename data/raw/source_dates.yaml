@@ -1,0 +1,19 @@
+# "As of" date of each statute source: the date up to which the copy we ingested is current.
+# Fill every TODO from the source document or its official page. Do not guess.
+# Format: free text exactly as printed on the source (e.g. "10-3-2022"), plus where it was read.
+# The ingestion pipeline copies `as_of` into every chunk of that document.
+MFLO-1961:
+  as_of: "10-3-2022"
+  basis: "PDF page header: 'Updated till 10-3-2022'"
+FCA-1964:
+  as_of: "17.1.2025"
+  basis: "PDF page header: 'FINAL COPY Updated till 17.1.2025'"
+DMMA-1939:
+  as_of: "29-05-2024"
+  basis: "Document date 29-05-2024 (not an 'updated till' date; confirm)"
+GWA-1890:
+  as_of: TODO
+  basis: "No 'updated till' date found in the PDF. Needs a human to confirm from the official source."
+CONST-1973:
+  as_of: TODO
+  basis: "PDF says 'As amended upto the Twenty-Seventh Amendment' (no date). Needs a human to confirm."

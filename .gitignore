@@ -1,0 +1,38 @@
+# Secrets and local settings
+.env
+.env.*
+!.env.example
+
+# Local source corpus: publish only the reviewed Constitution inputs below
+Code/**
+!Code/constitution.pdf
+!Code/scrape_constitution.py
+!Code/data/
+!Code/data/articles.jsonl
+!Code/data/constitution/
+!Code/data/constitution/meta.json
+
+# Corpus copies, generated indexes, evaluation output and caches
+data/raw/**
+!data/raw/source_dates.yaml
+data/processed/
+data/cache/
+chroma_db/
+logs/
+reports/
+.cache/
+models/
+hf_cache/
+**/huggingface/
+
+# Python and editor files
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+submissions/

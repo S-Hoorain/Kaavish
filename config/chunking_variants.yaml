@@ -1,0 +1,40 @@
+# Chunking variants for `python eval/run_eval.py --chunking-variant <name>`.
+# Each variant gets its own chunks file (data/processed/<variant>/chunks.jsonl) and its own Chroma
+# collection, so variants can be compared on the same questions without overwriting each other.
+# Token counts use the BGE-M3 tokenizer.
+
+default:
+  description: "Task baseline: 250-400 target, 600 cap, header line in embed_text"
+  target_min_tokens: 250
+  target_max_tokens: 400
+  hard_cap_tokens: 600
+  merge_below_tokens: 60
+  overlap_tokens: 50
+  header_in_embed_text: true
+
+no_header:
+  description: "Same sizes as default, embed_text without the one-line header"
+  target_min_tokens: 250
+  target_max_tokens: 400
+  hard_cap_tokens: 600
+  merge_below_tokens: 60
+  overlap_tokens: 50
+  header_in_embed_text: false
+
+small:
+  description: "Smaller chunks: 120-250 target, 350 cap"
+  target_min_tokens: 120
+  target_max_tokens: 250
+  hard_cap_tokens: 350
+  merge_below_tokens: 40
+  overlap_tokens: 40
+  header_in_embed_text: true
+
+large:
+  description: "Larger chunks: 350-500 target, 500 cap (fits inside BGE-M3's 512-token window)"
+  target_min_tokens: 350
+  target_max_tokens: 500
+  hard_cap_tokens: 500
+  merge_below_tokens: 80
+  overlap_tokens: 50
+  header_in_embed_text: true

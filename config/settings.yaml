@@ -1,0 +1,68 @@
+# Pipeline configuration (NFR-MAIN-03: parameters live in configuration, not in code).
+# Secrets and the provider/model choice come from .env (see .env.example), never from this file.
+
+paths:
+  raw_dir: data/raw
+  processed_dir: data/processed          # chunks.jsonl, skipped.jsonl, rejected.jsonl, corpus_manifest.json
+  judgment_manifest: data/judgment_manifest.csv
+  source_dates: data/raw/source_dates.yaml
+  embedding_cache: data/cache/embeddings
+  chroma_dir: chroma_db
+  reports_dir: reports
+  requests_log: logs/requests.jsonl
+  prompts_dir: prompts
+
+corpus:
+  # Statute/Constitution records with these statuses are not indexed (written to skipped.jsonl).
+  skip_statuses: [omitted, repealed, ceased]
+  jurisdiction_statutes: Pakistan (federal)
+  jurisdiction_constitution: Pakistan (federal)
+  jurisdiction_judgments: Sindh
+  # If true, a statute whose as_of is still "TODO" in source_dates.yaml is rejected like a missing field.
+  # Default false: it is indexed but flagged in the ingestion report (see HANDOFF.md, open questions).
+  strict_as_of: false
+
+chunking:
+  variant: default                       # name of the active variant in config/chunking_variants.yaml
+
+embeddings:
+  # provider comes from EMBEDDINGS in .env: bge_m3_local | openai
+  bge_m3_model: BAAI/bge-m3
+  max_seq_length: 512
+  batch_size: 8
+  normalize: true
+  device: cpu                            # overridden by EMBED_DEVICE in .env
+  # BAAI/bge-m3 ships pytorch_model.bin; with null, newer transformers also downloads a second
+  # 2.3 GB safetensors copy of the same weights. false = load the .bin (torch.load weights_only).
+  use_safetensors: false
+
+vector_store:
+  collection_prefix: lawfiqh            # collection name = <prefix>__<chunking variant>
+  distance: cosine
+
+retrieval:
+  default_k: 5
+  # Stage switches (FR-RET-06). Only dense is implemented in R0; the others are extension points
+  # and raise NotImplementedError if switched on.
+  stages:
+    query_normaliser: false              # Roman Urdu normaliser (FR-LANG-03)
+    bm25_fusion: false                   # R1: BM25 + reciprocal rank fusion (FR-RET-03)
+    metadata_filter: false               # R2: jurisdiction/status/date policy filter (FR-RET-04)
+    reranker: false                      # R3: cross-encoder rerank (FR-RET-05)
+
+llm:
+  # provider and model come from LLM_PROVIDER and LLM_MODEL in .env
+  temperature: 0
+  max_output_tokens: 4096                # cap, not a target; thinking models (e.g. Gemini) count reasoning tokens here
+  json_parse_retries: 2                  # extra attempts when the reply is not valid JSON
+  api_max_retries: 3                     # transient API errors (SDK back-off)
+  timeout_seconds: 120
+
+prompts:
+  version: v1
+
+eval:
+  questions: eval/pilot_questions.csv
+  runs: 3
+  modes: [c0, c1]
+  retrieval_k: 10

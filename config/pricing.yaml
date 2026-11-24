@@ -1,0 +1,32 @@
+# LLM and embedding prices used to estimate cost per request (FR-EVAL-04).
+# PLACEHOLDERS ONLY: no prices are filled in. Copy the numbers from the provider's official
+# pricing page for the exact model id you set in LLM_MODEL, and record where and when you read them.
+# While a price is null, the cost of that request is logged as null with cost_note "price not configured".
+currency: USD
+unit: per_1m_tokens
+
+models:
+  # Key format: "<provider>/<model id exactly as in LLM_MODEL>"
+  # "openai/<model-id>":
+  #   input_per_1m: null
+  #   output_per_1m: null
+  #   source: ""          # URL of the pricing page
+  #   checked_on: ""      # YYYY-MM-DD
+  # "anthropic/<model-id>":
+  #   input_per_1m: null
+  #   output_per_1m: null
+  #   source: ""
+  #   checked_on: ""
+  # "openai_compatible/<model-id>":     # e.g. a Gemini model through its OpenAI-compatible endpoint
+  #   input_per_1m: null
+  #   output_per_1m: null
+  #   source: ""
+  #   checked_on: ""
+
+embeddings:
+  bge_m3_local:
+    per_1m: 0             # runs locally; no API cost (compute time is logged separately)
+  # "openai/<embed-model-id>":
+  #   per_1m: null
+  #   source: ""
+  #   checked_on: ""

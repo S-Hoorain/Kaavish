@@ -1,0 +1,50 @@
+# One entry per statute source. To add a new Act: put its JSONL under data/raw/acts/<doc_id>.jsonl,
+# add an entry here, add its as_of date to data/raw/source_dates.yaml, then re-run ingestion.
+# `jurisdiction` is copied into every chunk; `jurisdiction_basis` says where it was read from.
+
+statutes:
+  CONST-1973:
+    file: constitution/articles.jsonl
+    pdf: constitution/constitution.pdf
+    doc_type: constitution
+    display_title: "Constitution of the Islamic Republic of Pakistan, 1973"
+    act_title: "THE CONSTITUTION OF THE ISLAMIC REPUBLIC OF PAKISTAN, 1973"
+    year: 1973
+    unit_name: Article
+    jurisdiction: Pakistan
+    jurisdiction_basis: "Federal Constitution"
+  MFLO-1961:
+    file: acts/MFLO-1961.jsonl
+    pdf: acts/pdf/MFLO-1961.pdf
+    display_title: "Muslim Family Laws Ordinance, 1961"
+    unit_name: Section
+    jurisdiction: Pakistan
+    jurisdiction_basis: "s.1(2): 'It extends to the whole of Pakistan'"
+  FCA-1964:
+    file: acts/FCA-1964.jsonl
+    pdf: acts/pdf/FCA-1964.pdf
+    display_title: "Family Courts Act, 1964"
+    unit_name: Section
+    jurisdiction: Pakistan
+    jurisdiction_basis: >-
+      s.1(2): 'It extends to the whole of Pakistan'. NOTE: W.P. Act XXXV of 1964; this copy cites
+      Punjab amendments. Which provincial version applies in Sindh is an open question (HANDOFF.md).
+  DMMA-1939:
+    file: acts/DMMA-1939.jsonl
+    pdf: acts/pdf/DMMA-1939.pdf
+    display_title: "Dissolution of Muslim Marriages Act, 1939"
+    unit_name: Section
+    jurisdiction: Pakistan
+    jurisdiction_basis: "s.1(2): 'It extends to the whole of Pakistan'"
+  GWA-1890:
+    file: acts/GWA-1890.jsonl
+    pdf: acts/pdf/GWA-1890.pdf
+    display_title: "Guardians and Wards Act, 1890"
+    unit_name: Section
+    jurisdiction: Pakistan
+    jurisdiction_basis: "s.1(2): 'It extends to the whole of Pakistan'"
+
+judgments:
+  court_display: "Sindh High Court"
+  jurisdiction: Sindh
+  doc_id_prefix: { long: SHC-L, short: SHC-S }
