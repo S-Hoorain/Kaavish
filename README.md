@@ -9,14 +9,14 @@ A research prototype for retrieving passages from Pakistani family-law sources a
 - `scripts/`: environment check, raw-data setup, and provider connectivity helper.
 - `eval/`: evaluation runner and pilot question set.
 - `tests/`: unit and API tests.
-- `Code/`: reviewed Constitution parser and its source/structured output. Runtime Constitution and Act inputs are under `data/raw/`; judgment documents remain separately supplied.
+- `Code/`: reviewed Constitution parser and its source/structured output. Runtime Constitution, Act, and judgment inputs are under `data/raw/`.
 - `docs/FRONTEND_RAG_INTEGRATION.md`: concrete frontend API contract and examples.
 
 ## Requirements
 
 - Python 3.11 or later (3.12 recommended).
 - An LLM provider API key for answer generation; local embedding and retrieval can be used independently.
-- The Constitution and four family-law Acts are included under `data/raw/`. Judgment PDFs are supplied separately and excluded from ingestion by default.
+- The Constitution, four family-law Acts, and judgment source inputs are included under `data/raw/`.
 
 ## Set up
 
@@ -45,7 +45,7 @@ python -m rag.cli ingest
 python -m rag.cli index
 ```
 
-The 30 judgment rows in `data/judgment_manifest.csv` are disabled by default because their source PDFs are supplied separately. To ingest them, place the PDFs under `data/raw/judgments/` and set the corresponding manifest rows to `include=y`.
+The 30 judgment rows in `data/judgment_manifest.csv` are enabled. Ingestion parses the source PDFs and writes parsed outputs under `data/processed/judgments_parsed/`; this generated folder is ignored by Git and must be recreated by running ingestion.
 
 ## Run the API
 

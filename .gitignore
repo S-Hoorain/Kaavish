@@ -19,6 +19,15 @@ data/raw/**
 !data/raw/acts/**
 !data/raw/constitution/
 !data/raw/constitution/**
+!data/raw/judgments/
+!data/raw/judgments/long/
+!data/raw/judgments/long/*.pdf
+!data/raw/judgments/long/existing_json/
+!data/raw/judgments/long/existing_json/*.json
+!data/raw/judgments/short/
+!data/raw/judgments/short/*.pdf
+!data/raw/judgments/short/existing_json/
+!data/raw/judgments/short/existing_json/*.json
 data/processed/
 data/cache/
 chroma_db/
