@@ -9,14 +9,14 @@ A research prototype for retrieving passages from Pakistani family-law sources a
 - `scripts/`: environment check, raw-data setup, and provider connectivity helper.
 - `eval/`: evaluation runner and pilot question set.
 - `tests/`: unit and API tests.
-- `Code/`: reviewed Constitution parser and its source/structured output. Other statutes and judgment documents are not included in this public repository.
+- `Code/`: reviewed Constitution parser and its source/structured output. Runtime Constitution and Act inputs are under `data/raw/`; judgment documents remain separately supplied.
 - `docs/FRONTEND_RAG_INTEGRATION.md`: concrete frontend API contract and examples.
 
 ## Requirements
 
 - Python 3.11 or later (3.12 recommended).
 - An LLM provider API key for answer generation; local embedding and retrieval can be used independently.
-- The source corpus. The public repository includes Constitution inputs only. The family-law Acts and judgment corpus used by the full baseline is intentionally supplied separately and must be placed in the paths expected by `scripts/setup_raw_data.py` before building the full index.
+- The Constitution and four family-law Acts are included under `data/raw/`. Judgment PDFs are supplied separately and excluded from ingestion by default.
 
 ## Set up
 
@@ -38,13 +38,14 @@ Check the environment:
 python scripts/check_env.py
 ```
 
-Provide the complete corpus under `Code/` using the folder and filenames in `scripts/setup_raw_data.py`, then copy it into the local raw-data area:
+Build the included Constitution and Acts corpus:
 
 ```powershell
-python scripts/setup_raw_data.py
+python -m rag.cli ingest
+python -m rag.cli index
 ```
 
-The setup script reports missing source files. With only the public Constitution files, full family-law ingestion/indexing and answer evaluation are not reproducible: the Acts and judgment source corpus is not included. Once the complete corpus is available, follow the ingestion and index commands exposed by `python -m rag.cli --help` and the settings in `config/`.
+The 30 judgment rows in `data/judgment_manifest.csv` are disabled by default because their source PDFs are supplied separately. To ingest them, place the PDFs under `data/raw/judgments/` and set the corresponding manifest rows to `include=y`.
 
 ## Run the API
 

@@ -15,6 +15,10 @@ Code/**
 # Corpus copies, generated indexes, evaluation output and caches
 data/raw/**
 !data/raw/source_dates.yaml
+!data/raw/acts/
+!data/raw/acts/**
+!data/raw/constitution/
+!data/raw/constitution/**
 data/processed/
 data/cache/
 chroma_db/
