@@ -3,7 +3,7 @@
     uvicorn rag.api:app --port 8000
 
 GET  /health               service, corpus and configuration status
-POST /ask                  {"question": str, "mode": "c0"|"c1", "k": int}
+POST /ask                  {"question": str, "mode": "c0"|"c1", "k": int, "history": [{"role", "content"}]}
 GET  /chunk/{chunk_id}     full passage + metadata for a source panel
                            (chunk ids contain '#': URL-encode it as %23, e.g. /chunk/GWA-1890:29%231;
                             /chunk?chunk_id=... works too)
@@ -24,10 +24,17 @@ app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"], allo
                    allow_methods=["GET", "POST"], allow_headers=["*"])
 
 
+class Turn(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(..., max_length=6000)
+
+
 class AskRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=1000, description="FR-QA-01: up to 1,000 characters")
     mode: Literal["c0", "c1"] = "c1"
     k: int = Field(5, ge=1, le=20)
+    history: list[Turn] = Field(default_factory=list, max_length=20,
+                                description="earlier turns, oldest first; used when answering.history.enabled")
 
 
 @app.get("/health")
@@ -60,7 +67,8 @@ def ask_endpoint(req: AskRequest):
     from rag.pipeline import ask
 
     try:
-        r = ask(req.question, mode=req.mode, k=req.k)
+        extra = {"history": [t.model_dump() for t in req.history]} if req.history else {}
+        r = ask(req.question, mode=req.mode, k=req.k, **extra)
     except LLMConfigError as e:
         raise HTTPException(status_code=503, detail=f"LLM not configured: {e}")
     except RuntimeError as e:
@@ -69,7 +77,8 @@ def ask_endpoint(req: AskRequest):
             raise HTTPException(status_code=503, detail=f"LLM not configured: {cause}")
         raise HTTPException(status_code=500, detail=str(e))
     keep = ("request_id", "mode", "question", "k", "status", "error", "final", "verification", "retrieved",
-            "latency_ms", "tokens", "cost", "corpus_version", "prompt_version", "chunking_variant")
+            "latency_ms", "tokens", "cost", "corpus_version", "prompt_version", "chunking_variant",
+            "standalone_question", "evidence_gate", "dropped_claims", "verification_first_pass")
     return {k: r.get(k) for k in keep}
 
 
