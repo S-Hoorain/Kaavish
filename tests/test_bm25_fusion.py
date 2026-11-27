@@ -90,3 +90,28 @@ def test_rerank_resorts_and_keeps_previous_score(monkeypatch):
     assert out[-1].chunk_id == "CONST:63A#1"                 # wrong passage pushed down
     assert all(0.0 <= c.score <= 1.0 for c in out)
     assert out[-1].metadata["pre_rerank_rank"] == 1
+
+
+def _c(cid, doc_type, rank):
+    return RetrievedChunk(cid, rank, 1.0 - rank / 100, cid, {"doc_type": doc_type}, [cid])
+
+
+def test_source_mix_reserves_statute_slots():
+    r = make_retriever()
+    r.mix_cfg = {"min_law": 2}
+    cands = [_c(f"SHC-L{i:02d}:1#1", "judgment", i) for i in range(1, 9)]
+    cands += [_c("CONST:63A#1", "constitution", 9), _c("GWA-1890:25#1", "act", 10),
+              _c("GWA-1890:17#1", "act", 11), _c("GWA-1890:12#1", "act", 12)]
+    out = r.source_mix(cands, 5)
+    ids = [c.chunk_id for c in out]
+    assert len(out) == 5
+    assert ids[:3] == ["SHC-L01:1#1", "SHC-L02:1#1", "SHC-L03:1#1"]       # best judgments kept, in order
+    assert ids[3:] == ["GWA-1890:25#1", "GWA-1890:17#1"]                   # two best Act sections added
+    assert "CONST:63A#1" not in ids                                        # Constitution not counted as law
+
+
+def test_source_mix_no_statutes_available_keeps_top_k():
+    r = make_retriever()
+    r.mix_cfg = {"min_law": 2}
+    cands = [_c(f"SHC-L{i:02d}:1#1", "judgment", i) for i in range(1, 9)]
+    assert [c.chunk_id for c in r.source_mix(cands, 5)] == [c.chunk_id for c in cands[:5]]

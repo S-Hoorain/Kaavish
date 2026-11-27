@@ -59,6 +59,7 @@ class Retriever:
         self.candidate_pool = int(rcfg.get("candidate_pool", 50))   # used when fusion or rerank is on
         self.rrf_k = int(rcfg.get("rrf_k", 60))
         self.rerank_cfg = rcfg.get("rerank", {}) or {}
+        self.mix_cfg = rcfg.get("source_mix", {}) or {}
 
     # ---- stages -------------------------------------------------------------------------------
     def normalise_query(self, q: str) -> str:
@@ -144,15 +145,30 @@ class Retriever:
             c.metadata, c.score = meta, round(sc, 6)
         return sorted(top, key=lambda c: c.score, reverse=True)
 
+    def _is_law(self, c: RetrievedChunk) -> bool:
+        types = self.mix_cfg.get("law_doc_types", ["act", "ordinance"])
+        return (c.metadata or {}).get("doc_type") in types
+
+    def source_mix(self, chunks: list[RetrievedChunk], n: int) -> list[RetrievedChunk]:
+        """Keep n chunks, reserving up to `min_law` slots for statute passages (Acts/Ordinances), so judgments
+        that discuss a section cannot crowd out the section itself. Order of the input is kept."""
+        m = int(self.mix_cfg.get("min_law", 2))
+        law = [c for c in chunks if self._is_law(c)][:m]
+        chosen_ids = {c.chunk_id for c in law}
+        rest = [c for c in chunks if c.chunk_id not in chosen_ids][: n - len(law)]
+        chosen_ids |= {c.chunk_id for c in rest}
+        return [c for c in chunks if c.chunk_id in chosen_ids]
+
     # ---- pipeline -------------------------------------------------------------------------------
     def retrieve_with_trace(self, question: str, k: int = 5, filters: dict | None = None) -> RetrievalResult:
         stages = {"query_normaliser": "off", "dense": "on", "bm25_fusion": "off", "metadata_filter": "off",
-                  "reranker": "off"}
+                  "reranker": "off", "source_mix": "off"}
+        mixing = bool(self.stages_cfg.get("source_mix"))
         q = question
         if self.stages_cfg.get("query_normaliser"):
             q = self.normalise_query(q)
             stages["query_normaliser"] = "on"
-        widen = self.stages_cfg.get("bm25_fusion") or self.stages_cfg.get("reranker")
+        widen = self.stages_cfg.get("bm25_fusion") or self.stages_cfg.get("reranker") or mixing
         n_candidates = max(k, self.candidate_pool) if widen else k
         chunks, t_embed, t_search = self.dense_search(q, n_candidates, filters)
         timings = {"embed": round(t_embed, 1), "search": round(t_search, 1)}
@@ -169,10 +185,21 @@ class Retriever:
         if self.stages_cfg.get("reranker"):
             for i, c in enumerate(chunks, start=1):
                 c.rank = i
+            if mixing:   # make sure the reranker also sees statute candidates, not only the top judgments
+                top_n = int(self.rerank_cfg.get("top_n", 30))
+                m = int(self.mix_cfg.get("min_law", 2))
+                law = [c for c in chunks if self._is_law(c)][: 2 * m]
+                ids = {c.chunk_id for c in law}
+                others = [c for c in chunks if c.chunk_id not in ids][: top_n - len(law)]
+                ids |= {c.chunk_id for c in others}
+                chunks = [c for c in chunks if c.chunk_id in ids]
             t0 = time.perf_counter()
             chunks = self.rerank(q, chunks)
             timings["reranker"] = round((time.perf_counter() - t0) * 1000, 1)
             stages["reranker"] = "on"
+        if mixing:
+            chunks = self.source_mix(chunks, k)
+            stages["source_mix"] = "on"
         chunks = chunks[:k]
         for i, c in enumerate(chunks, start=1):
             c.rank = i
