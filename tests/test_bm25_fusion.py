@@ -115,3 +115,22 @@ def test_source_mix_no_statutes_available_keeps_top_k():
     r.mix_cfg = {"min_law": 2}
     cands = [_c(f"SHC-L{i:02d}:1#1", "judgment", i) for i in range(1, 9)]
     assert [c.chunk_id for c in r.source_mix(cands, 5)] == [c.chunk_id for c in cands[:5]]
+
+
+def test_law_lane_adds_statutes_when_main_list_has_none():
+    import numpy as np
+
+    class LawOnlyCollection(FakeCollection):
+        def query(self, query_embeddings, n_results, where, include):
+            assert where == {"doc_type": {"$in": ["act", "ordinance"]}}
+            ids = ["GWA-1890:17#1", "GWA-1890:12#1"][:n_results]
+            return {"ids": [ids], "distances": [[0.6, 0.65][: len(ids)]],
+                    "metadatas": [[{"doc_type": "act"} for _ in ids]]}
+
+    r = make_retriever()
+    r.collection, r.mix_cfg, r._last_vec = LawOnlyCollection(), {"min_law": 2, "law_pool": 10}, np.zeros(3)
+    main = [_c(f"SHC-L{i:02d}:1#1", "judgment", i) for i in range(1, 6)]
+    out = r.source_mix(r.law_lane(main), 5)
+    ids = [c.chunk_id for c in out]
+    assert ids == ["SHC-L01:1#1", "SHC-L02:1#1", "SHC-L03:1#1", "GWA-1890:17#1", "GWA-1890:12#1"]
+    assert out[-1].metadata["law_lane"] is True

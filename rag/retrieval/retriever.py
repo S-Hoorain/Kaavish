@@ -72,17 +72,36 @@ class Retriever:
     def dense_search(self, q: str, n: int, where: dict | None) -> tuple[list[RetrievedChunk], float, float]:
         t0 = time.perf_counter()
         vec = self.embedder.embed_query(q)
+        self._last_vec = vec
         t1 = time.perf_counter()
+        out = self._query(vec, n, where)
+        t2 = time.perf_counter()
+        return out, (t1 - t0) * 1000, (t2 - t1) * 1000
+
+    def _query(self, vec, n: int, where: dict | None) -> list[RetrievedChunk]:
         res = self.collection.query(query_embeddings=[vec.tolist()], n_results=n, where=where or None,
                                     include=["distances", "metadatas"])
-        t2 = time.perf_counter()
         out = []
         for rank, (cid, dist, meta) in enumerate(zip(res["ids"][0], res["distances"][0], res["metadatas"][0]), start=1):
             rec = self.store.get(cid) or {}
             out.append(RetrievedChunk(chunk_id=cid, rank=rank, score=round(1.0 - float(dist), 6),
                                       text=rec.get("text", ""), metadata=meta,
                                       unit_ids=rec.get("unit_ids") or [meta.get("parent_id")]))
-        return out, (t1 - t0) * 1000, (t2 - t1) * 1000
+        return out
+
+    def law_lane(self, chunks: list[RetrievedChunk]) -> list[RetrievedChunk]:
+        """Second dense search over statute passages only (same query vector), appended after the main
+        candidates, so source_mix always has law to choose from even when judgments fill the main list."""
+        types = list(self.mix_cfg.get("law_doc_types", ["act", "ordinance"]))
+        n = int(self.mix_cfg.get("law_pool", 10))
+        where = {"doc_type": {"$in": types}} if len(types) > 1 else {"doc_type": types[0]}
+        have = {c.chunk_id for c in chunks}
+        extra = []
+        for c in self._query(self._last_vec, n, where):
+            if c.chunk_id not in have:
+                c.metadata = {**(c.metadata or {}), "law_lane": True}
+                extra.append(c)
+        return chunks + extra
 
     def bm25_index(self) -> BM25Index:
         if self._bm25 is None:
@@ -179,6 +198,10 @@ class Retriever:
             chunks = self.bm25_fusion(q, chunks, n_candidates)
             timings["bm25_fusion"] = round((time.perf_counter() - t0) * 1000, 1)
             stages["bm25_fusion"] = "on"
+        if mixing:
+            t0 = time.perf_counter()
+            chunks = self.law_lane(chunks)
+            timings["law_lane"] = round((time.perf_counter() - t0) * 1000, 1)
         if self.stages_cfg.get("metadata_filter"):
             chunks = self.metadata_filter(chunks, None)
             stages["metadata_filter"] = "on"
