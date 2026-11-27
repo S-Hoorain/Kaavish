@@ -6,7 +6,7 @@ Stage order (each stage is a method; disabled stages are skipped and logged as "
 
     1. normalise_query   EXTENSION POINT: Roman Urdu spelling normaliser (FR-LANG-03)
     2. dense_search      R0, implemented
-    3. bm25_fusion       EXTENSION POINT: R1, BM25 + reciprocal rank fusion (FR-RET-03)
+    3. bm25_fusion       R1, implemented: BM25 + reciprocal rank fusion (FR-RET-03), see bm25.py
     4. metadata_filter   EXTENSION POINT: R2, jurisdiction/status/date policy (FR-RET-04)
     5. rerank            EXTENSION POINT: R3, cross-encoder over the top 30-50 (FR-RET-05)
 
@@ -22,13 +22,14 @@ from typing import Any
 from rag.config import Settings, get_settings
 from rag.index.embeddings import get_embedder
 from rag.index.store import get_collection, load_chunk_store
+from rag.retrieval.bm25 import BM25Index, rrf
 
 
 @dataclass
 class RetrievedChunk:
     chunk_id: str
     rank: int
-    score: float                 # cosine similarity (1 - cosine distance)
+    score: float                 # cosine similarity (1 - cosine distance); RRF score when bm25_fusion is on
     text: str                    # verbatim passage text (shown to the LLM and used for quote checks)
     metadata: dict[str, Any]
     unit_ids: list[str] = field(default_factory=list)   # parent units covered (for evaluation)
@@ -52,6 +53,10 @@ class Retriever:
         self.collection = get_collection(self.s, check_model=True)   # refuses on model mismatch
         self.embedder = get_embedder(self.s)
         self.store = load_chunk_store(str(self.s.chunks_path))
+        self._bm25: BM25Index | None = None
+        rcfg = self.s.raw["retrieval"]
+        self.candidate_pool = int(rcfg.get("candidate_pool", 50))   # used when fusion or rerank is on
+        self.rrf_k = int(rcfg.get("rrf_k", 60))
 
     # ---- stages -------------------------------------------------------------------------------
     def normalise_query(self, q: str) -> str:
@@ -76,10 +81,45 @@ class Retriever:
                                       unit_ids=rec.get("unit_ids") or [meta.get("parent_id")]))
         return out, (t1 - t0) * 1000, (t2 - t1) * 1000
 
-    def bm25_fusion(self, q: str, dense: list[RetrievedChunk]) -> list[RetrievedChunk]:
-        # EXTENSION POINT (R1, FR-RET-03): build a BM25 index over chunks.jsonl `embed_text`, take its
-        # top-N, and merge with `dense` by reciprocal rank fusion (score = sum 1/(60 + rank)).
-        raise NotImplementedError("BM25 fusion is R1, not part of R0")
+    def bm25_index(self) -> BM25Index:
+        if self._bm25 is None:
+            docs = {cid: (rec.get("embed_text") or rec.get("text") or "") for cid, rec in self.store.by_id.items()}
+            self._bm25 = BM25Index(docs)
+        return self._bm25
+
+    def bm25_fusion(self, q: str, dense: list[RetrievedChunk], n: int | None = None) -> list[RetrievedChunk]:
+        """R1 (FR-RET-03): BM25 over chunks.jsonl `embed_text`, merged with the dense list by
+        reciprocal rank fusion (score = sum 1/(rrf_k + rank)). `score` becomes the RRF score; the
+        cosine similarity and the BM25 rank are kept in metadata (dense_score, dense_rank, bm25_rank)."""
+        n = n or self.candidate_pool
+        bm25_hits = self.bm25_index().search(q, n)
+        dense_by_id = {c.chunk_id: c for c in dense}
+        bm25_rank = {cid: r for r, (cid, _) in enumerate(bm25_hits, start=1)}
+        fused = rrf([[c.chunk_id for c in dense], [cid for cid, _ in bm25_hits]], k=self.rrf_k)
+
+        # chunks found only by BM25 need their Chroma metadata
+        missing = [cid for cid, _ in fused if cid not in dense_by_id]
+        meta_by_id: dict[str, dict] = {}
+        if missing:
+            got = self.collection.get(ids=missing, include=["metadatas"])
+            meta_by_id = dict(zip(got["ids"], got["metadatas"]))
+
+        out = []
+        for cid, score in fused:
+            if cid in dense_by_id:
+                c = dense_by_id[cid]
+                meta = dict(c.metadata or {})
+                meta.update(dense_score=c.score, dense_rank=c.rank)
+                text, units = c.text, c.unit_ids
+            else:
+                rec = self.store.get(cid) or {}
+                meta = dict(meta_by_id.get(cid) or {})
+                meta.update(dense_score=None, dense_rank=None)
+                text, units = rec.get("text", ""), (rec.get("unit_ids") or [meta.get("parent_id")])
+            meta["bm25_rank"] = bm25_rank.get(cid)
+            out.append(RetrievedChunk(chunk_id=cid, rank=0, score=round(score, 6), text=text,
+                                      metadata=meta, unit_ids=units))
+        return out
 
     def metadata_filter(self, chunks: list[RetrievedChunk], context: dict | None) -> list[RetrievedChunk]:
         # EXTENSION POINT (R2, FR-RET-04): drop status in {repealed, overruled}, out-of-jurisdiction
@@ -100,10 +140,16 @@ class Retriever:
         if self.stages_cfg.get("query_normaliser"):
             q = self.normalise_query(q)
             stages["query_normaliser"] = "on"
-        n_candidates = k  # R1/R3 will need a larger candidate pool (e.g. 50)
+        widen = self.stages_cfg.get("bm25_fusion") or self.stages_cfg.get("reranker")
+        n_candidates = max(k, self.candidate_pool) if widen else k
         chunks, t_embed, t_search = self.dense_search(q, n_candidates, filters)
+        timings = {"embed": round(t_embed, 1), "search": round(t_search, 1)}
         if self.stages_cfg.get("bm25_fusion"):
-            chunks = self.bm25_fusion(q, chunks)
+            if filters:
+                raise NotImplementedError("bm25_fusion does not apply `filters` yet; turn one of them off")
+            t0 = time.perf_counter()
+            chunks = self.bm25_fusion(q, chunks, n_candidates)
+            timings["bm25_fusion"] = round((time.perf_counter() - t0) * 1000, 1)
             stages["bm25_fusion"] = "on"
         if self.stages_cfg.get("metadata_filter"):
             chunks = self.metadata_filter(chunks, None)
@@ -114,8 +160,7 @@ class Retriever:
         chunks = chunks[:k]
         for i, c in enumerate(chunks, start=1):
             c.rank = i
-        return RetrievalResult(query=q, chunks=chunks, stages=stages,
-                               timings_ms={"embed": round(t_embed, 1), "search": round(t_search, 1)})
+        return RetrievalResult(query=q, chunks=chunks, stages=stages, timings_ms=timings)
 
     def retrieve(self, question: str, k: int = 5, filters: dict | None = None) -> list[RetrievedChunk]:
         return self.retrieve_with_trace(question, k, filters).chunks

@@ -42,11 +42,13 @@ vector_store:
 
 retrieval:
   default_k: 5
+  candidate_pool: 50                     # dense and BM25 candidates fused/reranked when R1/R3 are on
+  rrf_k: 60                              # reciprocal rank fusion constant
   # Stage switches (FR-RET-06). Only dense is implemented in R0; the others are extension points
   # and raise NotImplementedError if switched on.
   stages:
     query_normaliser: false              # Roman Urdu normaliser (FR-LANG-03)
-    bm25_fusion: false                   # R1: BM25 + reciprocal rank fusion (FR-RET-03)
+    bm25_fusion: true                   # R1: BM25 + reciprocal rank fusion (FR-RET-03)
     metadata_filter: false               # R2: jurisdiction/status/date policy filter (FR-RET-04)
     reranker: false                      # R3: cross-encoder rerank (FR-RET-05)
 
