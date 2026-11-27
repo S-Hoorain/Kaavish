@@ -75,6 +75,7 @@ def _reply(claims, insufficient=False, lang="english"):
 
 
 def test_c1_end_to_end_with_json_retry_and_verification(settings, monkeypatch, tmp_path):
+    settings.raw["logging"] = {"store_text": True}   # this test checks key redaction inside stored text
     good = _reply([
         {"text": "needs permission", "chunk_id": "GWA-1890:29#1", "quote": "he shall not, without the previous permission of the Court"},
         {"text": "altered", "chunk_id": "GWA-1890:29#1", "quote": "he shall not, without the prior permission of the Court"},
@@ -128,3 +129,19 @@ def test_parse_answer_json_validation():
         pipeline.parse_answer_json('{"answer": "x", "claims": [], "insufficient_evidence": "no", "language": "english"}')
     ok = pipeline.parse_answer_json('```json\n{"answer": "x", "claims": [], "insufficient_evidence": false, "language": "roman_urdu"}\n```')
     assert ok["language"] == "roman_urdu"
+
+
+def test_user_text_not_stored_by_default(settings, monkeypatch, tmp_path):
+    settings.raw["logging"] = {"store_text": False}
+    question = "My ex took our 3 children to Lahore, what can I do?"
+    fake = FakeLLM([_reply([{"text": "needs permission", "chunk_id": "GWA-1890:29#1",
+                             "quote": "he shall not, without the previous permission of the Court"}])])
+    monkeypatch.setattr(pipeline, "get_llm_client", lambda s: fake)
+    r = pipeline.ask(question, mode="c1", k=5)
+    assert r["question"] == question                      # the caller still gets everything
+    log = (tmp_path / "requests.jsonl").read_text(encoding="utf-8")
+    rec = json.loads(log.strip().splitlines()[-1])
+    assert "Lahore" not in log and "children" not in log
+    assert rec["question"].startswith("[not stored:") and rec["final"]["answer"].startswith("[not stored:")
+    assert rec["final"]["claims"][0]["quote"].startswith("he shall not")   # corpus quotes are kept
+    assert rec["verification"]["n_verified"] == 1 and rec["retrieved"]

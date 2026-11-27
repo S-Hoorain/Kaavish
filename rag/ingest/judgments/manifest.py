@@ -38,5 +38,5 @@ def read_manifest(path: Path) -> list[dict[str, str]]:
 
 def doc_id_for(row: dict[str, str], prefixes: dict[str, str]) -> str:
     stem = Path(row["file"]).stem
-    num = "".join(ch for ch in stem if ch.isdigit())[-2:]
+    num = "".join(ch for ch in stem if ch.isdigit())  # full number (was [-2:], which made judgement_101 collide with judgement_01)
     return f"{prefixes[row['length_class']]}{num}"
