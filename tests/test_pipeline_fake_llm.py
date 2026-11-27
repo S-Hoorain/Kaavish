@@ -59,6 +59,7 @@ def settings(tmp_path, monkeypatch):
     base = get_settings()
     raw = copy.deepcopy(base.raw)
     raw["paths"]["requests_log"] = str(tmp_path / "requests.jsonl")
+    raw["answering"] = {}                      # R0 behaviour, whatever the local settings.yaml has switched on
     s = Settings(raw=raw, chunking=base.chunking, env={**base.env, "OPENAI_API_KEY": SECRET,
                                                        "LLM_PROVIDER": "openai", "LLM_MODEL": "fake-model"})
     monkeypatch.setattr(pipeline, "get_settings", lambda variant=None: s)
