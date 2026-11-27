@@ -8,7 +8,7 @@ Stage order (each stage is a method; disabled stages are skipped and logged as "
     2. dense_search      R0, implemented
     3. bm25_fusion       R1, implemented: BM25 + reciprocal rank fusion (FR-RET-03), see bm25.py
     4. metadata_filter   EXTENSION POINT: R2, jurisdiction/status/date policy (FR-RET-04)
-    5. rerank            EXTENSION POINT: R3, cross-encoder over the top 30-50 (FR-RET-05)
+    5. rerank            R3, implemented: cross-encoder over the top 30 (FR-RET-05), see reranker.py
 
 `filters` is passed straight to Chroma as a `where` clause on scalar metadata (for example
 {"doc_id": "GWA-1890"}); it is plumbing for callers and tests, not the R2 policy filter.
@@ -23,13 +23,14 @@ from rag.config import Settings, get_settings
 from rag.index.embeddings import get_embedder
 from rag.index.store import get_collection, load_chunk_store
 from rag.retrieval.bm25 import BM25Index, rrf
+from rag.retrieval.reranker import get_reranker
 
 
 @dataclass
 class RetrievedChunk:
     chunk_id: str
     rank: int
-    score: float                 # cosine similarity (1 - cosine distance); RRF score when bm25_fusion is on
+    score: float                 # cosine similarity; RRF score if bm25_fusion; reranker score (0..1) if reranker
     text: str                    # verbatim passage text (shown to the LLM and used for quote checks)
     metadata: dict[str, Any]
     unit_ids: list[str] = field(default_factory=list)   # parent units covered (for evaluation)
@@ -57,6 +58,7 @@ class Retriever:
         rcfg = self.s.raw["retrieval"]
         self.candidate_pool = int(rcfg.get("candidate_pool", 50))   # used when fusion or rerank is on
         self.rrf_k = int(rcfg.get("rrf_k", 60))
+        self.rerank_cfg = rcfg.get("rerank", {}) or {}
 
     # ---- stages -------------------------------------------------------------------------------
     def normalise_query(self, q: str) -> str:
@@ -128,9 +130,19 @@ class Retriever:
         raise NotImplementedError("Metadata filtering is R2, not part of R0")
 
     def rerank(self, q: str, chunks: list[RetrievedChunk]) -> list[RetrievedChunk]:
-        # EXTENSION POINT (R3, FR-RET-05): score (q, chunk.text) pairs with a multilingual
-        # cross-encoder over the top 30-50 candidates and re-sort; keep dense score in metadata.
-        raise NotImplementedError("Reranking is R3, not part of R0")
+        """R3 (FR-RET-05): re-score the top `rerank.top_n` candidates with a multilingual cross-encoder
+        and re-sort. `score` becomes the reranker score (0..1); the previous score and rank are kept in
+        metadata (pre_rerank_score, pre_rerank_rank). Candidates beyond top_n are dropped."""
+        cfg = self.rerank_cfg
+        top = chunks[: int(cfg.get("top_n", 30))]
+        model = get_reranker(cfg.get("model", "BAAI/bge-reranker-v2-m3"), int(cfg.get("max_length", 512)),
+                             int(cfg.get("batch_size", 8)), self.s.embed_device)
+        scores = model.score(q, [c.text for c in top])
+        for c, sc in zip(top, scores):
+            meta = dict(c.metadata or {})
+            meta.update(pre_rerank_score=c.score, pre_rerank_rank=c.rank)
+            c.metadata, c.score = meta, round(sc, 6)
+        return sorted(top, key=lambda c: c.score, reverse=True)
 
     # ---- pipeline -------------------------------------------------------------------------------
     def retrieve_with_trace(self, question: str, k: int = 5, filters: dict | None = None) -> RetrievalResult:
@@ -155,7 +167,11 @@ class Retriever:
             chunks = self.metadata_filter(chunks, None)
             stages["metadata_filter"] = "on"
         if self.stages_cfg.get("reranker"):
+            for i, c in enumerate(chunks, start=1):
+                c.rank = i
+            t0 = time.perf_counter()
             chunks = self.rerank(q, chunks)
+            timings["reranker"] = round((time.perf_counter() - t0) * 1000, 1)
             stages["reranker"] = "on"
         chunks = chunks[:k]
         for i, c in enumerate(chunks, start=1):

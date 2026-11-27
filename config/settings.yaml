@@ -44,13 +44,18 @@ retrieval:
   default_k: 5
   candidate_pool: 50                     # dense and BM25 candidates fused/reranked when R1/R3 are on
   rrf_k: 60                              # reciprocal rank fusion constant
+  rerank:                                # R3 settings (used only when stages.reranker is true)
+    model: BAAI/bge-reranker-v2-m3       # multilingual cross-encoder, ~2.3 GB, downloaded on first use
+    top_n: 15                           # candidates re-scored (more = better recall, slower on CPU)
+    max_length: 384
+    batch_size: 8
   # Stage switches (FR-RET-06). Only dense is implemented in R0; the others are extension points
   # and raise NotImplementedError if switched on.
   stages:
     query_normaliser: false              # Roman Urdu normaliser (FR-LANG-03)
     bm25_fusion: true                   # R1: BM25 + reciprocal rank fusion (FR-RET-03)
     metadata_filter: false               # R2: jurisdiction/status/date policy filter (FR-RET-04)
-    reranker: false                      # R3: cross-encoder rerank (FR-RET-05)
+    reranker: true                      # R3: cross-encoder rerank (FR-RET-05)
 
 llm:
   # provider and model come from LLM_PROVIDER and LLM_MODEL in .env

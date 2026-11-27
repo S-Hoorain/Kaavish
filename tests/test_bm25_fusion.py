@@ -63,3 +63,30 @@ def test_fusion_adds_bm25_only_hit_and_keeps_dense_score():
     assert by["SHC-L16#3"].metadata["dense_score"] is None
     assert by["SHC-L16#3"].metadata["bm25_rank"] == 1
     assert by["SHC-L16#3"].text == DOCS["SHC-L16#3"]
+
+
+class FakeCrossEncoder:
+    """Scores a passage by how many query words it contains (stands in for bge-reranker-v2-m3)."""
+
+    def score(self, query, passages):
+        q = set(tokenize(query))
+        return [len(q & set(tokenize(p))) / (len(q) or 1) for p in passages]
+
+
+class _S:
+    embed_device = "cpu"
+
+
+def test_rerank_resorts_and_keeps_previous_score(monkeypatch):
+    import rag.retrieval.retriever as retr
+    monkeypatch.setattr(retr, "get_reranker", lambda *a, **k: FakeCrossEncoder())
+    r = make_retriever()
+    r.s, r.rerank_cfg = _S(), {"top_n": 3}
+    cands = [RetrievedChunk(cid, i, 0.9 - i / 10, DOCS[cid], {}, [cid]) for i, cid in
+             enumerate(["CONST:63A#1", "GWA-1890:25#1", "GWA-1890:17#1", "SHC-L16#3"], start=1)]
+    out = r.rerank("custody of ward guardian", cands)
+    assert len(out) == 3                                     # only top_n re-scored and kept
+    assert out[0].chunk_id == "GWA-1890:25#1"                # most query words
+    assert out[-1].chunk_id == "CONST:63A#1"                 # wrong passage pushed down
+    assert all(0.0 <= c.score <= 1.0 for c in out)
+    assert out[-1].metadata["pre_rerank_rank"] == 1
